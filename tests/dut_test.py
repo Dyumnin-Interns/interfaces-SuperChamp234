@@ -46,11 +46,21 @@ async def check_fifo_status(dut, fifo_name):
     else:
         raise ValueError("Invalid FIFO name")
 
-    status = await read(dut, status_address)
-    if status == 1:
-        dut._log.info(f"{fifo_name} FIFO is not full/empty")
+    if fifo_name == "Y":
+        while True:
+            status = await read(dut, status_address)
+            if status == 1:
+                break
+            dut._log.info(f"{fifo_name} FIFO is empty, waiting for data")
+            await RisingEdge(dut.CLK)
     else:
-        dut._log.info(f"{fifo_name} FIFO is full/empty")
+        while True:
+            status = await read(dut, status_address)
+            if status == 1:
+                dut._log.info(f"{fifo_name} FIFO is not full, ready for write")
+                break
+            dut._log.info(f"{fifo_name} FIFO is full, waiting for space")
+            await RisingEdge(dut.CLK)
 
 async def write_testcase(dut, A, B):
     dut._log.info(f"Writing to FIFOs: A={A}, B={B}")
